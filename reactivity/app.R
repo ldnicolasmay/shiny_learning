@@ -29,21 +29,33 @@ ui <- fluidPage(
          shiny::checkboxInput("individualObs", "Show rug?", value = FALSE),
          sliderInput("obs", "Number of observations:",
                      min = 0, max = 1000, value = 500),
-         actionButton("goButton", "Go!")
+         actionButton("goButton", "Go!"),
+         sliderInput("a",
+                     label = "Select an input to display",
+                     min = 0, max = 100, value = 50)
       ),
       
       # Show a plot of the generated distribution
       mainPanel(
          plotOutput("plotOut"),
          tableOutput("tableOut"),
+         
          textOutput("nthValue"),
          textOutput("nthValueInv"),
-         plotOutput("distPlot")
+         
+         plotOutput("distPlot"),
+         
+         h1(textOutput("text")),
+         
+         h3("URL components"),
+         verbatimTextOutput("urlText"),
+         h3("Parse query string"),
+         verbatimTextOutput("queryText")
       )
    )
 )
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   output$plotOut <- renderPlot({
     hist(faithful$eruptions, breaks = as.numeric(input$bins))
     if (input$individualObs)
@@ -73,6 +85,25 @@ server <- function(input, output) {
     # Use isolate() to avoid dependency on input$obs
     dist <- isolate(rnorm(input$obs))
     hist(dist)
+  })
+  
+  output$text <- renderText({
+    print(input$a)
+  })
+  
+  output$urlText <- renderText({
+    paste(sep = "",
+          "protocol:", session$clientData$url_protocol, "\n",
+          "hostname: ", session$clientData$url_hostname, "\n",
+          "pathname: ", session$clientData$url_pathname, "\n",
+          "port: ",     session$clientData$url_port,     "\n",
+          "search: ",   session$clientData$url_search,   "\n"
+          )
+  })
+  
+  output$queryText <- renderText({
+    query <- parseQueryString(session$clientData$url_search)
+    paste(names(query), query, sep = "=", collapse = ", ")
   })
 }
 
